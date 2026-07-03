@@ -17,11 +17,15 @@ export async function POST(request: NextRequest) {
   const phoneNumberId = value?.metadata?.phone_number_id as string | undefined;
   const message = value?.messages?.[0];
   const messageId = message?.id as string | undefined;
-  const salon = phoneNumberId ? await prisma.salon.findFirst({ where: { phoneNumberId } }) : null;
+  const eventId = messageId ?? `evt_${crypto.randomUUID()}`;
+  let salon = phoneNumberId ? await prisma.salon.findFirst({ where: { phoneNumberId } }) : null;
+  if (!salon && phoneNumberId && phoneNumberId === process.env.DEMO_META_PHONE_NUMBER_ID) {
+    salon = await prisma.salon.findUnique({ where: { id: 'salon-aurora-demo' } });
+  }
   await prisma.rawWebhookPayload.upsert({
-    where: { externalEventId: messageId ?? `evt_${crypto.randomUUID()}` },
-    create: { externalEventId: messageId, salonId: salon?.id, payload },
-    update: { payload },
+    where: { externalEventId: eventId },
+    create: { externalEventId: eventId, salonId: salon?.id, payload },
+    update: { payload, salonId: salon?.id },
   });
 
   if (salon?.isDemo && message?.type === 'text') {
