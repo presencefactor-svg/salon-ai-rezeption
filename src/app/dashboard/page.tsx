@@ -36,6 +36,11 @@ export default function DashboardPage() {
   const [duration, setDuration] = useState('45');
   const [staffName, setStaffName] = useState('Mia');
   const [customerName, setCustomerName] = useState('Neue Kundin');
+  const [appointmentLocal, setAppointmentLocal] = useState(() => {
+    const d = new Date();
+    d.setHours(d.getHours() + 1, 0, 0, 0);
+    return d.toISOString().slice(0, 16);
+  });
   const [manualReply, setManualReply] = useState('Gerne, wir kümmern uns darum.');
   const [aiAnswer, setAiAnswer] = useState('');
   const [notice, setNotice] = useState('');
@@ -121,9 +126,16 @@ export default function DashboardPage() {
           </div>
 
           <div id="Kalender" className="card p-5">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><h2 className="text-2xl font-black">Kalender / Termine</h2><button className="btn" onClick={() => act('appointment', () => post('createAppointment', { customerName }))}>Termin für {customerName} anlegen</button></div>
-            <input className="input mt-3" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{data!.appointments.length ? data!.appointments.map((a) => <div className="rounded-2xl border bg-white p-4" key={a.id}><b>{new Date(a.startUtc).toLocaleString('de-DE')}</b><p>{a.service?.name} · {a.staff?.displayName}</p><span className="text-sm text-emerald-700">{a.status}</span></div>) : <p className="text-neutral-600">Noch keine Termine. Button oben legt einen echten DB-Termin an.</p>}</div>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-2xl font-black">Kalender / Termine</h2>
+              <button className="btn" onClick={() => act('appointment', () => post('createAppointment', { customerName, startUtc: new Date(appointmentLocal).toISOString() }))}>Termin anlegen</button>
+            </div>
+            <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_230px]">
+              <input className="input min-w-0" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Kundenname" />
+              <input className="input min-w-0" type="datetime-local" value={appointmentLocal} onChange={(e) => setAppointmentLocal(e.target.value)} />
+            </div>
+            <p className="mt-2 text-xs text-neutral-500">Wähle Datum und Uhrzeit. Es wird nicht mehr automatisch +24h gebucht.</p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{data!.appointments.length ? data!.appointments.map((a) => <div className="rounded-2xl border bg-white p-4" key={a.id}><b>{new Date(a.startUtc).toLocaleString('de-DE')}</b><p>{a.service?.name} · {a.staff?.displayName}</p><span className="text-sm text-emerald-700">{a.status}</span></div>) : <p className="text-neutral-600">Noch keine Termine. Button oben legt einen echten DB-Termin zum gewählten Datum an.</p>}</div>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
@@ -131,7 +143,7 @@ export default function DashboardPage() {
             <div className="card p-5"><h2 className="text-2xl font-black">Manuelle Antwort</h2><p className="text-sm text-neutral-600">Speichert echte Message in DB und setzt Gespräch auf HUMAN.</p><textarea className="input mt-3 w-full" value={manualReply} onChange={(e) => setManualReply(e.target.value)} /><button className="btn mt-3" disabled={!firstConversation || !!saving} onClick={() => act('reply', () => post('sendManualReply', { conversationId: firstConversation.id, message: manualReply }))}>Antwort speichern</button></div>
           </div>
 
-          <div className="grid gap-4 2xl:grid-cols-2">
+          <div className="grid gap-4">
             <div id="Leistungen" className="card p-5">
               <h2 className="text-2xl font-black">Leistungen & Preise</h2>
               <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_90px_90px_auto]">
@@ -145,7 +157,7 @@ export default function DashboardPage() {
                   const edit = serviceEdits[s.id] || { name: s.name, durationMinutes: String(s.durationMinutes), priceEur: String(s.priceEurCents / 100), bufferMinutes: String(s.bufferMinutes), active: Boolean(s.active) };
                   return (
                     <div className="rounded-2xl border p-3" key={s.id}>
-                      <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_72px_72px_72px] 2xl:grid-cols-[minmax(0,1fr)_72px_72px_72px_auto_auto]">
+                      <div className="grid gap-2 lg:grid-cols-[minmax(180px,1fr)_90px_90px_90px_110px_120px]">
                         <input className="input min-w-0" value={edit.name} onChange={(e) => changeService(s.id, { name: e.target.value })} />
                         <input className="input min-w-0" value={edit.durationMinutes} onChange={(e) => changeService(s.id, { durationMinutes: e.target.value })} />
                         <input className="input min-w-0" value={edit.priceEur} onChange={(e) => changeService(s.id, { priceEur: e.target.value })} />
