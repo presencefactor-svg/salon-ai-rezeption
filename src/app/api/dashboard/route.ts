@@ -112,6 +112,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (body.action === 'removeService') {
+      const existing = await prisma.service.findFirst({ where: { id: String(body.id), salonId } });
+      if (!existing) throw new Error('Leistung nicht gefunden.');
+      await prisma.appointment.deleteMany({ where: { salonId, serviceId: existing.id } });
+      await prisma.waitlistEntry.deleteMany({ where: { salonId, serviceId: existing.id } });
+      await prisma.service.delete({ where: { id: existing.id } });
+      return NextResponse.json({ ok: true });
+    }
+
     if (body.action === 'createStaff') {
       const staff = await prisma.staff.create({
         data: {
@@ -136,6 +145,14 @@ export async function POST(request: Request) {
 
     if (body.action === 'deleteStaff') {
       await prisma.staff.update({ where: { id: String(body.id) }, data: { active: false } });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (body.action === 'removeStaff') {
+      const existing = await prisma.staff.findFirst({ where: { id: String(body.id), salonId } });
+      if (!existing) throw new Error('Team-Mitglied nicht gefunden.');
+      await prisma.appointment.deleteMany({ where: { salonId, staffId: existing.id } });
+      await prisma.staff.delete({ where: { id: existing.id } });
       return NextResponse.json({ ok: true });
     }
 

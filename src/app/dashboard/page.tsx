@@ -201,13 +201,14 @@ export default function DashboardPage() {
                   const edit = serviceEdits[s.id] || { name: s.name, durationMinutes: String(s.durationMinutes), priceEur: String(s.priceEurCents / 100), bufferMinutes: String(s.bufferMinutes), active: Boolean(s.active) };
                   return (
                     <div className="rounded-2xl border p-3" key={s.id}>
-                      <div className="grid gap-2 lg:grid-cols-[minmax(180px,1fr)_90px_90px_90px_110px_120px]">
+                      <div className="grid gap-2 xl:grid-cols-[minmax(180px,1fr)_90px_90px_90px_110px_120px_100px]">
                         <input className="input min-w-0" value={edit.name} onChange={(e) => changeService(s.id, { name: e.target.value })} />
                         <input className="input min-w-0" value={edit.durationMinutes} onChange={(e) => changeService(s.id, { durationMinutes: e.target.value })} />
                         <input className="input min-w-0" value={edit.priceEur} onChange={(e) => changeService(s.id, { priceEur: e.target.value })} />
                         <input className="input min-w-0" value={edit.bufferMinutes} onChange={(e) => changeService(s.id, { bufferMinutes: e.target.value })} />
                         <button className="btn whitespace-nowrap px-3 2xl:col-auto" disabled={!!saving} onClick={() => act(`save-service-${s.id}`, () => post('updateService', { id: s.id, ...edit }))}>{saving === `save-service-${s.id}` ? 'Speichere…' : 'Speichern'}</button>
                         <button className="rounded-xl border px-3 py-2 font-bold whitespace-nowrap" disabled={!!saving} onClick={() => act(`delete-service-${s.id}`, () => post('deleteService', { id: s.id }))}>Deaktivieren</button>
+                        <button className="rounded-xl border border-red-300 px-3 py-2 font-bold text-red-700 whitespace-nowrap" disabled={!!saving} onClick={() => act(`remove-service-${s.id}`, () => post('removeService', { id: s.id }))}>Löschen</button>
                       </div>
                       <p className="mt-2 text-xs text-neutral-500">Name · Minuten · Preis € · Puffer Min · Status: {s.active ? 'aktiv' : 'inaktiv'}</p>
                     </div>
@@ -223,10 +224,11 @@ export default function DashboardPage() {
                   const edit = staffEdits[m.id] || { displayName: m.displayName, active: Boolean(m.active) };
                   return (
                     <div className="rounded-2xl border p-3" key={m.id}>
-                      <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_auto_auto]">
+                      <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_110px_120px_100px]">
                         <input className="input min-w-0" value={edit.displayName} onChange={(e) => changeStaff(m.id, { displayName: e.target.value })} />
                         <button className="btn whitespace-nowrap px-3" disabled={!!saving} onClick={() => act(`save-staff-${m.id}`, () => post('updateStaff', { id: m.id, ...edit }))}>{saving === `save-staff-${m.id}` ? 'Speichere…' : 'Speichern'}</button>
                         <button className="rounded-xl border px-3 py-2 font-bold whitespace-nowrap" disabled={!!saving} onClick={() => act(`delete-staff-${m.id}`, () => post('deleteStaff', { id: m.id }))}>Deaktivieren</button>
+                        <button className="rounded-xl border border-red-300 px-3 py-2 font-bold text-red-700 whitespace-nowrap" disabled={!!saving} onClick={() => act(`remove-staff-${m.id}`, () => post('removeStaff', { id: m.id }))}>Löschen</button>
                       </div>
                       <p className="mt-2 text-xs text-neutral-500">Status: {m.active ? 'aktiv' : 'inaktiv'}</p>
                     </div>
