@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { encryptPlaintext } from '@/lib/gdpr/crypto';
 import { DEMO_SALON_ID, demoSignupUrl, nextDemoSlots } from '@/lib/demo-whatsapp';
+import { sendWhatsAppText } from '@/lib/whatsapp-cloud';
 
 function lower(text: string) { return text.toLowerCase(); }
 
@@ -55,5 +56,7 @@ export async function handleDemoInbound(input: { from: string; text: string; met
   }
 
   await prisma.message.create({ data: { salonId: salon.id, conversationId: conversation.id, direction: 'OUTBOUND', bodyEncrypted: encryptPlaintext(reply) } });
-  return { conversation, reply };
+  const sendResult = await sendWhatsAppText({ phoneNumberId: salon.phoneNumberId, accessToken: process.env.DEMO_META_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN, to: input.from, body: reply });
+  await prisma.auditLog.create({ data: { salonId: salon.id, actorType: 'SYSTEM', action: 'demo_whatsapp_send', entityType: 'Conversation', entityId: conversation.id, metadata: sendResult } }).catch(() => null);
+  return { conversation, reply, sendResult };
 }
