@@ -12,6 +12,9 @@ type ApiData = {
   templates: any[];
 };
 
+type ServiceEdit = { name: string; durationMinutes: string; priceEur: string; bufferMinutes: string; active: boolean };
+type StaffEdit = { displayName: string; active: boolean };
+
 function money(cents: number) {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format((cents || 0) / 100);
 }
@@ -35,6 +38,9 @@ export default function DashboardPage() {
   const [customerName, setCustomerName] = useState('Neue Kundin');
   const [manualReply, setManualReply] = useState('Gerne, wir kümmern uns darum.');
   const [aiAnswer, setAiAnswer] = useState('');
+  const [notice, setNotice] = useState('');
+  const [serviceEdits, setServiceEdits] = useState<Record<string, ServiceEdit>>({});
+  const [staffEdits, setStaffEdits] = useState<Record<string, StaffEdit>>({});
 
   async function load() {
     setLoading(true);
@@ -44,6 +50,8 @@ export default function DashboardPage() {
       const json = await res.json();
       if (!res.ok || json.ok === false) throw new Error(json.error || 'Dashboard API Fehler');
       setData(json);
+      setServiceEdits(Object.fromEntries(json.services.map((s: any) => [s.id, { name: s.name, durationMinutes: String(s.durationMinutes), priceEur: String(s.priceEurCents / 100), bufferMinutes: String(s.bufferMinutes), active: Boolean(s.active) }])));
+      setStaffEdits(Object.fromEntries(json.staff.map((m: any) => [m.id, { displayName: m.displayName, active: Boolean(m.active) }])));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler');
     } finally {
@@ -62,7 +70,16 @@ export default function DashboardPage() {
   async function act(label: string, fn: () => Promise<unknown>) {
     setSaving(label);
     setError('');
-    try { await fn(); await load(); } catch (e) { setError(e instanceof Error ? e.message : 'Fehler'); } finally { setSaving(''); }
+    setNotice('');
+    try { await fn(); setNotice('Gespeichert.'); await load(); } catch (e) { setError(e instanceof Error ? e.message : 'Fehler'); } finally { setSaving(''); }
+  }
+
+  function changeService(id: string, patch: Partial<ServiceEdit>) {
+    setServiceEdits((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  }
+
+  function changeStaff(id: string, patch: Partial<StaffEdit>) {
+    setStaffEdits((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   }
 
   if (loading) return <main className="min-h-screen bg-[#faf7f2] p-8"><div className="card p-8">Lade Dashboard aus Neon…</div></main>;
@@ -89,6 +106,7 @@ export default function DashboardPage() {
 
         <section className="grid gap-4">
           {error && <div className="rounded-2xl bg-red-50 p-4 text-red-800">{error}</div>}
+          {notice && <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-800">{notice}</div>}
 
           <div id="Konfiguration" className="card p-5">
             <h2 className="text-3xl font-black">Salon konfigurieren</h2>
@@ -123,35 +141,41 @@ export default function DashboardPage() {
                 <button className="btn" onClick={() => act('service', () => post('createService', { name: serviceName, durationMinutes: duration, priceEur: price, bufferMinutes: 10 }))}>+</button>
               </div>
               <div className="mt-4 grid gap-3">
-                {data!.services.map((s) => (
-                  <div className="rounded-2xl border p-3" key={s.id}>
-                    <div className="grid gap-2 md:grid-cols-[1fr_90px_90px_90px_auto_auto]">
-                      <input id={`svc-name-${s.id}`} className="input" defaultValue={s.name} />
-                      <input id={`svc-duration-${s.id}`} className="input" defaultValue={s.durationMinutes} />
-                      <input id={`svc-price-${s.id}`} className="input" defaultValue={(s.priceEurCents / 100).toString()} />
-                      <input id={`svc-buffer-${s.id}`} className="input" defaultValue={s.bufferMinutes} />
-                      <button className="btn" onClick={() => act(`save-service-${s.id}`, () => post('updateService', { id: s.id, name: (document.getElementById(`svc-name-${s.id}`) as HTMLInputElement).value, durationMinutes: (document.getElementById(`svc-duration-${s.id}`) as HTMLInputElement).value, priceEur: (document.getElementById(`svc-price-${s.id}`) as HTMLInputElement).value, bufferMinutes: (document.getElementById(`svc-buffer-${s.id}`) as HTMLInputElement).value, active: true }))}>Speichern</button>
-                      <button className="rounded-xl border px-3 py-2 font-bold" onClick={() => act(`delete-service-${s.id}`, () => post('deleteService', { id: s.id }))}>Deaktivieren</button>
+                {data!.services.map((s) => {
+                  const edit = serviceEdits[s.id] || { name: s.name, durationMinutes: String(s.durationMinutes), priceEur: String(s.priceEurCents / 100), bufferMinutes: String(s.bufferMinutes), active: Boolean(s.active) };
+                  return (
+                    <div className="rounded-2xl border p-3" key={s.id}>
+                      <div className="grid gap-2 md:grid-cols-[1fr_90px_90px_90px_auto_auto]">
+                        <input className="input" value={edit.name} onChange={(e) => changeService(s.id, { name: e.target.value })} />
+                        <input className="input" value={edit.durationMinutes} onChange={(e) => changeService(s.id, { durationMinutes: e.target.value })} />
+                        <input className="input" value={edit.priceEur} onChange={(e) => changeService(s.id, { priceEur: e.target.value })} />
+                        <input className="input" value={edit.bufferMinutes} onChange={(e) => changeService(s.id, { bufferMinutes: e.target.value })} />
+                        <button className="btn" disabled={!!saving} onClick={() => act(`save-service-${s.id}`, () => post('updateService', { id: s.id, ...edit }))}>{saving === `save-service-${s.id}` ? 'Speichere…' : 'Speichern'}</button>
+                        <button className="rounded-xl border px-3 py-2 font-bold" disabled={!!saving} onClick={() => act(`delete-service-${s.id}`, () => post('deleteService', { id: s.id }))}>Deaktivieren</button>
+                      </div>
+                      <p className="mt-2 text-xs text-neutral-500">Name · Minuten · Preis € · Puffer Min · Status: {s.active ? 'aktiv' : 'inaktiv'}</p>
                     </div>
-                    <p className="mt-2 text-xs text-neutral-500">Name · Minuten · Preis € · Puffer Min · Status: {s.active ? 'aktiv' : 'inaktiv'}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             <div id="Team" className="card p-5">
               <h2 className="text-2xl font-black">Team</h2>
               <div className="mt-3 flex gap-2"><input className="input flex-1" value={staffName} onChange={(e) => setStaffName(e.target.value)} /><button className="btn" onClick={() => act('staff', () => post('createStaff', { displayName: staffName }))}>Hinzufügen</button></div>
               <div className="mt-4 grid gap-3">
-                {data!.staff.map((m) => (
-                  <div className="rounded-2xl border p-3" key={m.id}>
-                    <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
-                      <input id={`staff-name-${m.id}`} className="input" defaultValue={m.displayName} />
-                      <button className="btn" onClick={() => act(`save-staff-${m.id}`, () => post('updateStaff', { id: m.id, displayName: (document.getElementById(`staff-name-${m.id}`) as HTMLInputElement).value, active: true }))}>Speichern</button>
-                      <button className="rounded-xl border px-3 py-2 font-bold" onClick={() => act(`delete-staff-${m.id}`, () => post('deleteStaff', { id: m.id }))}>Deaktivieren</button>
+                {data!.staff.map((m) => {
+                  const edit = staffEdits[m.id] || { displayName: m.displayName, active: Boolean(m.active) };
+                  return (
+                    <div className="rounded-2xl border p-3" key={m.id}>
+                      <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
+                        <input className="input" value={edit.displayName} onChange={(e) => changeStaff(m.id, { displayName: e.target.value })} />
+                        <button className="btn" disabled={!!saving} onClick={() => act(`save-staff-${m.id}`, () => post('updateStaff', { id: m.id, ...edit }))}>{saving === `save-staff-${m.id}` ? 'Speichere…' : 'Speichern'}</button>
+                        <button className="rounded-xl border px-3 py-2 font-bold" disabled={!!saving} onClick={() => act(`delete-staff-${m.id}`, () => post('deleteStaff', { id: m.id }))}>Deaktivieren</button>
+                      </div>
+                      <p className="mt-2 text-xs text-neutral-500">Status: {m.active ? 'aktiv' : 'inaktiv'}</p>
                     </div>
-                    <p className="mt-2 text-xs text-neutral-500">Status: {m.active ? 'aktiv' : 'inaktiv'}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
