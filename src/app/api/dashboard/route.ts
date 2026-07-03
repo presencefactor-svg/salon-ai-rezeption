@@ -9,6 +9,26 @@ async function getSalonId() {
   return salon?.id ?? DEMO_SALON_ID;
 }
 
+function minutes(value: string) {
+  const [h, m] = value.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function weekdaySundayZero(date: Date) {
+  return date.getDay();
+}
+
+async function assertInsideOpeningHours(salonId: string, startUtc: Date, endUtc: Date) {
+  const day = weekdaySundayZero(startUtc);
+  const rule = await prisma.openingHours.findUnique({ where: { salonId_weekday: { salonId, weekday: day } } });
+  if (!rule || rule.isClosed) throw new Error('Salon ist an diesem Tag geschlossen.');
+  const start = startUtc.getHours() * 60 + startUtc.getMinutes();
+  const end = endUtc.getHours() * 60 + endUtc.getMinutes();
+  if (start < minutes(rule.openTime) || end > minutes(rule.closeTime)) {
+    throw new Error(`Termin liegt außerhalb der Öffnungszeiten (${rule.openTime}–${rule.closeTime}).`);
+  }
+}
+
 export async function GET() {
   try {
     const salonId = await getSalonId();
@@ -48,6 +68,16 @@ export async function POST(request: Request) {
         },
       });
       return NextResponse.json({ ok: true, salon });
+    }
+
+    if (body.action === 'updateOpeningHours') {
+      const rows = Array.isArray(body.openingHours) ? body.openingHours : [];
+      await Promise.all(rows.map((row: any) => prisma.openingHours.upsert({
+        where: { salonId_weekday: { salonId, weekday: Number(row.weekday) } },
+        update: { openTime: String(row.openTime || '09:00'), closeTime: String(row.closeTime || '18:00'), isClosed: Boolean(row.isClosed) },
+        create: { salonId, weekday: Number(row.weekday), openTime: String(row.openTime || '09:00'), closeTime: String(row.closeTime || '18:00'), isClosed: Boolean(row.isClosed) },
+      })));
+      return NextResponse.json({ ok: true });
     }
 
     if (body.action === 'createService') {
@@ -113,11 +143,27 @@ export async function POST(request: Request) {
       const service = await prisma.service.findFirst({ where: { salonId, active: true }, orderBy: { createdAt: 'asc' } });
       const staff = await prisma.staff.findFirst({ where: { salonId, active: true }, orderBy: { createdAt: 'asc' } });
       if (!service || !staff) throw new Error('Bitte zuerst Leistung und Team-Mitglied anlegen.');
-      const startUtc = body.startUtc ? new Date(body.startUtc) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const startUtc = body.startLocal ? new Date(String(body.startLocal)) : body.startUtc ? new Date(body.startUtc) : new Date(Date.now() + 24 * 60 * 60 * 1000);
       const endUtc = new Date(startUtc.getTime() + service.durationMinutes * 60 * 1000);
-      const customer = await prisma.customer.create({ data: { salonId, nameEncrypted: encryptPlaintext(String(body.customerName || 'Kundin')), whatsappEncrypted: encryptPlaintext(String(body.phone || '+491000000000')) } });
+      await assertInsideOpeningHours(salonId, startUtc, endUtc);
+      const customer = await prisma.customer.create({ data: { salonId, nameEncrypted: encryptPlaintext(String(body.customerName || 'Kundin')), whatsappEncrypted: encryptPlaintext(String(body.phone || '+491****0000')) } });
       const appointment = await prisma.appointment.create({ data: { salonId, customerId: customer.id, serviceId: service.id, staffId: staff.id, startUtc, endUtc, source: 'MANUAL' }, include: { service: true, staff: true } });
       return NextResponse.json({ ok: true, appointment });
+    }
+
+    if (body.action === 'updateAppointment') {
+      const existing = await prisma.appointment.findFirst({ where: { id: String(body.id), salonId }, include: { service: true } });
+      if (!existing) throw new Error('Termin nicht gefunden.');
+      const startUtc = body.startLocal ? new Date(String(body.startLocal)) : new Date(String(body.startUtc));
+      const endUtc = new Date(startUtc.getTime() + existing.service.durationMinutes * 60 * 1000);
+      await assertInsideOpeningHours(salonId, startUtc, endUtc);
+      const appointment = await prisma.appointment.update({ where: { id: existing.id }, data: { startUtc, endUtc }, include: { service: true, staff: true } });
+      return NextResponse.json({ ok: true, appointment });
+    }
+
+    if (body.action === 'cancelAppointment') {
+      await prisma.appointment.update({ where: { id: String(body.id) }, data: { status: 'CANCELLED' } });
+      return NextResponse.json({ ok: true });
     }
 
     if (body.action === 'sendManualReply') {

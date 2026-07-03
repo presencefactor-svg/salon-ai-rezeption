@@ -14,6 +14,7 @@ type ApiData = {
 
 type ServiceEdit = { name: string; durationMinutes: string; priceEur: string; bufferMinutes: string; active: boolean };
 type StaffEdit = { displayName: string; active: boolean };
+type HoursEdit = { weekday: number; openTime: string; closeTime: string; isClosed: boolean };
 
 function money(cents: number) {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format((cents || 0) / 100);
@@ -46,6 +47,7 @@ export default function DashboardPage() {
   const [notice, setNotice] = useState('');
   const [serviceEdits, setServiceEdits] = useState<Record<string, ServiceEdit>>({});
   const [staffEdits, setStaffEdits] = useState<Record<string, StaffEdit>>({});
+  const [hoursEdits, setHoursEdits] = useState<HoursEdit[]>([]);
 
   async function load() {
     setLoading(true);
@@ -57,6 +59,10 @@ export default function DashboardPage() {
       setData(json);
       setServiceEdits(Object.fromEntries(json.services.map((s: any) => [s.id, { name: s.name, durationMinutes: String(s.durationMinutes), priceEur: String(s.priceEurCents / 100), bufferMinutes: String(s.bufferMinutes), active: Boolean(s.active) }])));
       setStaffEdits(Object.fromEntries(json.staff.map((m: any) => [m.id, { displayName: m.displayName, active: Boolean(m.active) }])));
+      setHoursEdits([0, 1, 2, 3, 4, 5, 6].map((weekday) => {
+        const row = json.openingHours.find((h: any) => h.weekday === weekday);
+        return { weekday, openTime: row?.openTime || '09:00', closeTime: row?.closeTime || '18:00', isClosed: row?.isClosed ?? (weekday === 0 || weekday === 6) };
+      }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler');
     } finally {
@@ -87,12 +93,23 @@ export default function DashboardPage() {
     setStaffEdits((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   }
 
+  function changeHours(weekday: number, patch: Partial<HoursEdit>) {
+    setHoursEdits((prev) => prev.map((row) => row.weekday === weekday ? { ...row, ...patch } : row));
+  }
+
+  function toLocalInput(value: string | Date) {
+    const d = new Date(value);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   if (loading) return <main className="min-h-screen bg-[#faf7f2] p-8"><div className="card p-8">Lade Dashboard aus Neon…</div></main>;
 
   if (error && !data) return <main className="min-h-screen bg-[#faf7f2] p-8"><div className="card p-8"><h1 className="text-3xl font-black">Dashboard braucht Setup</h1><p className="mt-3 text-red-700">{error}</p><a className="btn mt-4 inline-block" href="/setup">Setup öffnen</a></div></main>;
 
   const salon = data!.salon;
   const firstConversation = data!.conversations?.[0];
+  const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
   function simulateAi() {
     const s = data?.services?.[0];
@@ -106,7 +123,7 @@ export default function DashboardPage() {
         <aside className="card p-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)]">
           <div className="rounded-2xl bg-neutral-950 p-4 text-white"><p className="text-xs uppercase tracking-widest text-amber-300">Live Neon Dashboard</p><h1 className="mt-1 text-2xl font-black">{salon.name}</h1><p className="text-sm text-neutral-300">{salon.timezone} · {salon.tonePreference === 'DU' ? 'du' : 'Sie'}</p></div>
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950"><b>Datenbank verbunden</b><br />Änderungen werden in Neon gespeichert.</div>
-          <nav className="mt-4 grid gap-2 text-sm font-bold">{['Konfiguration','Kalender','Posteingang','Leistungen','Team','KI-Test','Statistiken'].map((item) => <a className="rounded-xl px-3 py-2 hover:bg-white" href={`#${item}`} key={item}>{item}</a>)}</nav>
+          <nav className="mt-4 grid gap-2 text-sm font-bold">{['Konfiguration','Kalender','Öffnungszeiten','Posteingang','Leistungen','Team','KI-Test','Statistiken'].map((item) => <a className="rounded-xl px-3 py-2 hover:bg-white" href={`#${item}`} key={item}>{item}</a>)}</nav>
         </aside>
 
         <section className="grid gap-4">
@@ -128,14 +145,40 @@ export default function DashboardPage() {
           <div id="Kalender" className="card p-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <h2 className="text-2xl font-black">Kalender / Termine</h2>
-              <button className="btn" onClick={() => act('appointment', () => post('createAppointment', { customerName, startUtc: new Date(appointmentLocal).toISOString() }))}>Termin anlegen</button>
+              <button className="btn" onClick={() => act('appointment', () => post('createAppointment', { customerName, startLocal: appointmentLocal }))}>Termin anlegen</button>
             </div>
             <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_230px]">
               <input className="input min-w-0" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Kundenname" />
               <input className="input min-w-0" type="datetime-local" value={appointmentLocal} onChange={(e) => setAppointmentLocal(e.target.value)} />
             </div>
-            <p className="mt-2 text-xs text-neutral-500">Wähle Datum und Uhrzeit. Es wird nicht mehr automatisch +24h gebucht.</p>
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{data!.appointments.length ? data!.appointments.map((a) => <div className="rounded-2xl border bg-white p-4" key={a.id}><b>{new Date(a.startUtc).toLocaleString('de-DE')}</b><p>{a.service?.name} · {a.staff?.displayName}</p><span className="text-sm text-emerald-700">{a.status}</span></div>) : <p className="text-neutral-600">Noch keine Termine. Button oben legt einen echten DB-Termin zum gewählten Datum an.</p>}</div>
+            <p className="mt-2 text-xs text-neutral-500">Wähle Datum und Uhrzeit. Termine außerhalb der Öffnungszeiten werden abgelehnt.</p>
+            <div className="mt-4 grid gap-3">
+              {data!.appointments.length ? data!.appointments.map((a) => (
+                <div className="grid gap-2 rounded-2xl border bg-white p-4 lg:grid-cols-[220px_minmax(0,1fr)_120px_120px]" key={a.id}>
+                  <input className="input min-w-0" type="datetime-local" defaultValue={toLocalInput(a.startUtc)} id={`appt-${a.id}`} />
+                  <p className="self-center min-w-0">{a.service?.name} · {a.staff?.displayName}<br /><span className="text-sm text-emerald-700">{a.status}</span></p>
+                  <button className="btn px-3" onClick={() => act(`appt-${a.id}`, () => post('updateAppointment', { id: a.id, startLocal: (document.getElementById(`appt-${a.id}`) as HTMLInputElement).value }))}>Speichern</button>
+                  <button className="rounded-xl border px-3 py-2 font-bold" onClick={() => act(`cancel-${a.id}`, () => post('cancelAppointment', { id: a.id }))}>Stornieren</button>
+                </div>
+              )) : <p className="text-neutral-600">Noch keine Termine. Button oben legt einen echten DB-Termin zum gewählten Datum an.</p>}
+            </div>
+          </div>
+
+          <div id="Öffnungszeiten" className="card p-5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-2xl font-black">Öffnungszeiten</h2>
+              <button className="btn" onClick={() => act('hours', () => post('updateOpeningHours', { openingHours: hoursEdits }))}>Öffnungszeiten speichern</button>
+            </div>
+            <div className="mt-4 grid gap-2">
+              {hoursEdits.map((h) => (
+                <div className="grid gap-2 rounded-2xl border p-3 md:grid-cols-[60px_120px_120px_120px]" key={h.weekday}>
+                  <b className="self-center">{dayNames[h.weekday]}</b>
+                  <input className="input" type="time" value={h.openTime} onChange={(e) => changeHours(h.weekday, { openTime: e.target.value })} disabled={h.isClosed} />
+                  <input className="input" type="time" value={h.closeTime} onChange={(e) => changeHours(h.weekday, { closeTime: e.target.value })} disabled={h.isClosed} />
+                  <label className="flex items-center gap-2 font-bold"><input type="checkbox" checked={h.isClosed} onChange={(e) => changeHours(h.weekday, { isClosed: e.target.checked })} /> geschlossen</label>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
