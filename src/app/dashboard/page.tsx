@@ -114,8 +114,46 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <div id="Leistungen" className="card p-5"><h2 className="text-2xl font-black">Leistungen & Preise</h2><div className="mt-3 grid grid-cols-[1fr_100px_100px_auto] gap-2"><input className="input" value={serviceName} onChange={(e) => setServiceName(e.target.value)} /><input className="input" value={duration} onChange={(e) => setDuration(e.target.value)} /><input className="input" value={price} onChange={(e) => setPrice(e.target.value)} /><button className="btn" onClick={() => act('service', () => post('createService', { name: serviceName, durationMinutes: duration, priceEur: price, bufferMinutes: 10 }))}>+</button></div><div className="mt-4 grid gap-2">{data!.services.map((s) => <div className="rounded-2xl border p-3" key={s.id}><b>{s.name}</b><br /><span className="text-sm text-neutral-600">{s.durationMinutes} Min · {money(s.priceEurCents)} · {s.active ? 'aktiv' : 'inaktiv'}</span></div>)}</div></div>
-            <div id="Team" className="card p-5"><h2 className="text-2xl font-black">Team</h2><div className="mt-3 flex gap-2"><input className="input flex-1" value={staffName} onChange={(e) => setStaffName(e.target.value)} /><button className="btn" onClick={() => act('staff', () => post('createStaff', { displayName: staffName }))}>Hinzufügen</button></div><div className="mt-4 grid gap-2">{data!.staff.map((m) => <div className="rounded-2xl border p-3" key={m.id}><b>{m.displayName}</b><p className="text-sm text-neutral-600">{m.active ? 'aktiv' : 'inaktiv'}</p></div>)}</div></div>
+            <div id="Leistungen" className="card p-5">
+              <h2 className="text-2xl font-black">Leistungen & Preise</h2>
+              <div className="mt-3 grid grid-cols-[1fr_90px_90px_auto] gap-2">
+                <input className="input" value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="Name" />
+                <input className="input" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="Min" />
+                <input className="input" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="EUR" />
+                <button className="btn" onClick={() => act('service', () => post('createService', { name: serviceName, durationMinutes: duration, priceEur: price, bufferMinutes: 10 }))}>+</button>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {data!.services.map((s) => (
+                  <div className="rounded-2xl border p-3" key={s.id}>
+                    <div className="grid gap-2 md:grid-cols-[1fr_90px_90px_90px_auto_auto]">
+                      <input id={`svc-name-${s.id}`} className="input" defaultValue={s.name} />
+                      <input id={`svc-duration-${s.id}`} className="input" defaultValue={s.durationMinutes} />
+                      <input id={`svc-price-${s.id}`} className="input" defaultValue={(s.priceEurCents / 100).toString()} />
+                      <input id={`svc-buffer-${s.id}`} className="input" defaultValue={s.bufferMinutes} />
+                      <button className="btn" onClick={() => act(`save-service-${s.id}`, () => post('updateService', { id: s.id, name: (document.getElementById(`svc-name-${s.id}`) as HTMLInputElement).value, durationMinutes: (document.getElementById(`svc-duration-${s.id}`) as HTMLInputElement).value, priceEur: (document.getElementById(`svc-price-${s.id}`) as HTMLInputElement).value, bufferMinutes: (document.getElementById(`svc-buffer-${s.id}`) as HTMLInputElement).value, active: true }))}>Speichern</button>
+                      <button className="rounded-xl border px-3 py-2 font-bold" onClick={() => act(`delete-service-${s.id}`, () => post('deleteService', { id: s.id }))}>Deaktivieren</button>
+                    </div>
+                    <p className="mt-2 text-xs text-neutral-500">Name · Minuten · Preis € · Puffer Min · Status: {s.active ? 'aktiv' : 'inaktiv'}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div id="Team" className="card p-5">
+              <h2 className="text-2xl font-black">Team</h2>
+              <div className="mt-3 flex gap-2"><input className="input flex-1" value={staffName} onChange={(e) => setStaffName(e.target.value)} /><button className="btn" onClick={() => act('staff', () => post('createStaff', { displayName: staffName }))}>Hinzufügen</button></div>
+              <div className="mt-4 grid gap-3">
+                {data!.staff.map((m) => (
+                  <div className="rounded-2xl border p-3" key={m.id}>
+                    <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
+                      <input id={`staff-name-${m.id}`} className="input" defaultValue={m.displayName} />
+                      <button className="btn" onClick={() => act(`save-staff-${m.id}`, () => post('updateStaff', { id: m.id, displayName: (document.getElementById(`staff-name-${m.id}`) as HTMLInputElement).value, active: true }))}>Speichern</button>
+                      <button className="rounded-xl border px-3 py-2 font-bold" onClick={() => act(`delete-staff-${m.id}`, () => post('deleteStaff', { id: m.id }))}>Deaktivieren</button>
+                    </div>
+                    <p className="mt-2 text-xs text-neutral-500">Status: {m.active ? 'aktiv' : 'inaktiv'}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div id="KI-Test" className="card p-5"><h2 className="text-2xl font-black">KI-Testgespräch</h2><button className="btn mt-3" onClick={simulateAi}>Antwort aus aktuellen DB-Daten simulieren</button>{aiAnswer && <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-emerald-950">{aiAnswer}</div>}</div>

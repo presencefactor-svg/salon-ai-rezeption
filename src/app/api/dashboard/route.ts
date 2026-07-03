@@ -63,6 +63,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, service });
     }
 
+    if (body.action === 'updateService') {
+      const service = await prisma.service.update({
+        where: { id: String(body.id) },
+        data: {
+          name: String(body.name || 'Leistung'),
+          durationMinutes: Number(body.durationMinutes || 60),
+          priceEurCents: Math.round(Number(body.priceEur || 0) * 100),
+          bufferMinutes: Number(body.bufferMinutes || 0),
+          active: body.active !== false,
+        },
+      });
+      return NextResponse.json({ ok: true, service });
+    }
+
     if (body.action === 'deleteService') {
       await prisma.service.update({ where: { id: String(body.id) }, data: { active: false } });
       return NextResponse.json({ ok: true });
@@ -77,6 +91,22 @@ export async function POST(request: Request) {
         },
       });
       return NextResponse.json({ ok: true, staff });
+    }
+
+    if (body.action === 'updateStaff') {
+      const staff = await prisma.staff.update({
+        where: { id: String(body.id) },
+        data: {
+          displayName: String(body.displayName || 'Team'),
+          active: body.active !== false,
+        },
+      });
+      return NextResponse.json({ ok: true, staff });
+    }
+
+    if (body.action === 'deleteStaff') {
+      await prisma.staff.update({ where: { id: String(body.id) }, data: { active: false } });
+      return NextResponse.json({ ok: true });
     }
 
     if (body.action === 'createAppointment') {
