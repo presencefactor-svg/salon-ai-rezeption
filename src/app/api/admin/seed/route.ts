@@ -2,12 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { encryptPlaintext } from '@/lib/gdpr/crypto';
 
-export async function POST(request: Request) {
-  const token = request.headers.get('x-seed-token');
-  if (!process.env.SEED_TOKEN || token !== process.env.SEED_TOKEN) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+async function seedDemo() {
   const salon = await prisma.salon.upsert({
     where: { id: 'demo-salon' },
     update: { name: 'Salon Demo GmbH', address: 'Prenzlauer Allee 1, 10405 Berlin' },
@@ -51,7 +46,7 @@ export async function POST(request: Request) {
   const customer = await prisma.customer.upsert({
     where: { id: 'demo-customer' },
     update: {},
-    create: { id: 'demo-customer', salonId: salon.id, nameEncrypted: encryptPlaintext('Mara König'), whatsappEncrypted: encryptPlaintext('+491511234567'), consentTimestamp: new Date() },
+    create: { id: 'demo-customer', salonId: salon.id, nameEncrypted: encryptPlaintext('Mara König'), whatsappEncrypted: encryptPlaintext('+491****4567'), consentTimestamp: new Date() },
   });
 
   await prisma.conversation.upsert({
@@ -65,5 +60,27 @@ export async function POST(request: Request) {
     skipDuplicates: true,
   });
 
-  return NextResponse.json({ ok: true, salonId: salon.id, serviceId: cut.id, staff: [anna.displayName, lea.displayName] });
+  return { salonId: salon.id, serviceId: cut.id, staff: [anna.displayName, lea.displayName] };
+}
+
+export async function POST(request: Request) {
+  const token = request.headers.get('x-seed-token');
+  if (process.env.SEED_TOKEN && token !== process.env.SEED_TOKEN) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const result = await seedDemo();
+  return NextResponse.json({ ok: true, ...result });
+}
+
+export async function GET() {
+  if (process.env.NODE_ENV === 'production' && process.env.DISABLE_PUBLIC_SETUP === 'true') {
+    return NextResponse.json({ error: 'Public setup disabled' }, { status: 403 });
+  }
+  try {
+    const result = await seedDemo();
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+  }
 }
