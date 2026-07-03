@@ -43,6 +43,23 @@ See `.env.example`:
 - `META_WEBHOOK_VERIFY_TOKEN`, `META_APP_ID`, `META_APP_SECRET`
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+- `DEMO_WHATSAPP_NUMBER=447451285419`
+- `DEMO_META_PHONE_NUMBER_ID` for routing real Meta demo webhooks to Salon Aurora
+- `DEMO_SIGNUP_URL` optional follow-up/signup URL
+
+## Public WhatsApp demo smoke test
+
+1. Deploy with `DEMO_WHATSAPP_NUMBER=447451285419`.
+2. Run `/api/admin/init-db`, then `/api/admin/demo-seed` to create **Salon Aurora**.
+3. Open `/` on desktop: QR code should render and encode `wa.me` with prefilled German text.
+4. On mobile, tap **WhatsApp-Demo öffnen**. WhatsApp should open with: `Hallo! Ich möchte einen Termin buchen`.
+5. Send the message to the demo number.
+6. Meta webhook `/api/whatsapp/webhook` must receive the inbound message with `phone_number_id=DEMO_META_PHONE_NUMBER_ID`.
+7. Demo agent persists raw payload, conversation/message rows, replies with Salon Aurora intro and slot suggestions.
+8. Send confirmation such as `Ja, passt` → demo booking is stored with `source=DEMO`; follow-up signup hook is sent once.
+9. Check `/admin/demo-stats` for aggregate counters.
+10. Run `/api/admin/demo-purge` to purge demo conversations/customers/bookings older than 24h.
+
 
 ## Build order implemented
 

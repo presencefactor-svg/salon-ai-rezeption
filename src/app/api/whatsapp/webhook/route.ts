@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { handleDemoInbound } from '@/lib/demo-agent';
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
@@ -14,12 +15,19 @@ export async function POST(request: NextRequest) {
   const payload = await request.json();
   const value = payload?.entry?.[0]?.changes?.[0]?.value;
   const phoneNumberId = value?.metadata?.phone_number_id as string | undefined;
-  const messageId = value?.messages?.[0]?.id as string | undefined;
+  const message = value?.messages?.[0];
+  const messageId = message?.id as string | undefined;
   const salon = phoneNumberId ? await prisma.salon.findFirst({ where: { phoneNumberId } }) : null;
   await prisma.rawWebhookPayload.upsert({
     where: { externalEventId: messageId ?? `evt_${crypto.randomUUID()}` },
     create: { externalEventId: messageId, salonId: salon?.id, payload },
     update: { payload },
   });
+
+  if (salon?.isDemo && message?.type === 'text') {
+    const result = await handleDemoInbound({ from: String(message.from || ''), text: String(message.text?.body || ''), metaMessageId: messageId });
+    return NextResponse.json({ ok: true, queued: false, demo: true, reply: result?.reply });
+  }
+
   return NextResponse.json({ ok: true, queued: true });
 }

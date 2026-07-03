@@ -9,7 +9,7 @@ export async function POST() {
       ["ChannelMode", ["INBOUND_ONLY", "FULL"]],
       ["SubscriptionStatus", ["TRIALING", "ACTIVE", "PAST_DUE", "CANCELED", "INCOMPLETE"]],
       ["AppointmentStatus", ["CONFIRMED", "CANCELLED", "NO_SHOW", "COMPLETED"]],
-      ["AppointmentSource", ["AI", "MANUAL"]],
+      ["AppointmentSource", ["AI", "MANUAL", "DEMO"]],
       ["ConversationChannel", ["WHATSAPP"]],
       ["ConversationMode", ["AI", "HUMAN"]],
       ["MessageDirection", ["INBOUND", "OUTBOUND"]],
@@ -60,7 +60,16 @@ export async function POST() {
     await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "AuditLog" ("id" TEXT NOT NULL,"salon_id" TEXT NOT NULL,"actorType" "AuditActorType" NOT NULL,"actorId" TEXT,"action" TEXT NOT NULL,"entityType" TEXT,"entityId" TEXT,"metadata" JSONB,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id"))`);
     await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "RawWebhookPayload" ("id" TEXT NOT NULL,"salon_id" TEXT,"provider" TEXT NOT NULL DEFAULT 'META_WHATSAPP',"externalEventId" TEXT,"payload" JSONB NOT NULL,"processedAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "RawWebhookPayload_pkey" PRIMARY KEY ("id"))`);
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "MessageTemplate_salon_id_name_key" ON "MessageTemplate"("salon_id", "name")`);
+    await prisma.$executeRawUnsafe(`ALTER TYPE "AppointmentSource" ADD VALUE IF NOT EXISTS 'DEMO'`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "isDemo" BOOLEAN NOT NULL DEFAULT false`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "demoSignupUrl" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "demoFollowupDelaySec" INTEGER NOT NULL DEFAULT 30`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "demoFollowupSent" BOOLEAN NOT NULL DEFAULT false`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Conversation" ADD COLUMN IF NOT EXISTS "demoMessageCount" INTEGER NOT NULL DEFAULT 0`);
+    await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "DemoAnalyticsEvent" ("id" TEXT NOT NULL,"type" TEXT NOT NULL,"salon_id" TEXT,"metadata" JSONB,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "DemoAnalyticsEvent_pkey" PRIMARY KEY ("id"))`);
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Message_metaMessageId_key" ON "Message"("metaMessageId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "DemoAnalyticsEvent_type_createdAt_idx" ON "DemoAnalyticsEvent"("type", "createdAt")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "DemoAnalyticsEvent_salon_id_createdAt_idx" ON "DemoAnalyticsEvent"("salon_id", "createdAt")`);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Appointment_salon_id_startUtc_endUtc_idx" ON "Appointment"("salon_id", "startUtc", "endUtc")`);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Conversation_salon_id_lastActivity_idx" ON "Conversation"("salon_id", "lastActivity")`);
     return NextResponse.json({ ok: true, message: 'All dashboard tables ensured. Now open /api/admin/seed.' });
