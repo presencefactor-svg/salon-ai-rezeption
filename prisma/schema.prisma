@@ -1,0 +1,308 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  STAFF
+}
+
+enum TonePreference {
+  SIE
+  DU
+}
+
+enum ChannelMode {
+  INBOUND_ONLY
+  FULL
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+  COMPLETED
+}
+
+enum AppointmentSource {
+  AI
+  MANUAL
+}
+
+enum ConversationChannel {
+  WHATSAPP
+}
+
+enum ConversationMode {
+  AI
+  HUMAN
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum TemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TemplateCategory {
+  UTILITY
+}
+
+enum WaitlistStatus {
+  OPEN
+  OFFERED
+  BOOKED
+  EXPIRED
+  CANCELLED
+}
+
+enum AuditActorType {
+  AI
+  USER
+  SYSTEM
+  WEBHOOK
+  JOB
+}
+
+model Salon {
+  id                   String             @id @default(cuid())
+  name                 String
+  address              String?
+  timezone             String             @default("Europe/Berlin")
+  locale               String             @default("de-DE")
+  tonePreference       TonePreference     @default(SIE)
+  phoneNumberId        String?
+  wabaId               String?
+  encryptedAccessToken String?
+  channelMode          ChannelMode        @default(INBOUND_ONLY)
+  subscriptionStatus   SubscriptionStatus @default(TRIALING)
+  retentionMonths      Int                @default(12)
+  aiEnabled            Boolean            @default(true)
+  greetingText         String?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  users                User[]
+  staff                Staff[]
+  services             Service[]
+  openingHours         OpeningHours[]
+  closedDates          ClosedDate[]
+  customers            Customer[]
+  appointments         Appointment[]
+  waitlistEntries      WaitlistEntry[]
+  conversations        Conversation[]
+  messageTemplates     MessageTemplate[]
+  auditLogs            AuditLog[]
+  rawWebhooks          RawWebhookPayload[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  salonId      String   @map("salon_id")
+  salon        Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  email        String   @unique
+  passwordHash String?
+  role         Role     @default(STAFF)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([salonId])
+}
+
+model Staff {
+  id           String        @id @default(cuid())
+  salonId      String        @map("salon_id")
+  salon        Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  displayName  String
+  workingHours Json
+  active       Boolean       @default(true)
+  services     Service[]     @relation("StaffServices")
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([salonId])
+}
+
+model Service {
+  id              String          @id @default(cuid())
+  salonId         String          @map("salon_id")
+  salon           Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  name            String
+  durationMinutes Int
+  priceEurCents   Int
+  bufferMinutes   Int             @default(0)
+  active          Boolean         @default(true)
+  staff           Staff[]         @relation("StaffServices")
+  appointments    Appointment[]
+  waitlistEntries WaitlistEntry[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([salonId])
+}
+
+model OpeningHours {
+  id        String  @id @default(cuid())
+  salonId   String  @map("salon_id")
+  salon     Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  weekday   Int
+  openTime  String
+  closeTime String
+  isClosed  Boolean @default(false)
+
+  @@unique([salonId, weekday])
+}
+
+model ClosedDate {
+  id      String   @id @default(cuid())
+  salonId String   @map("salon_id")
+  salon   Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  date    DateTime
+  reason  String?
+
+  @@index([salonId, date])
+}
+
+model Customer {
+  id                String          @id @default(cuid())
+  salonId           String          @map("salon_id")
+  salon             Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  nameEncrypted     String?
+  whatsappEncrypted String
+  notesEncrypted    String?
+  consentTimestamp  DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  conversations     Conversation[]
+  appointments      Appointment[]
+  waitlistEntries   WaitlistEntry[]
+
+  @@index([salonId])
+}
+
+model Appointment {
+  id           String            @id @default(cuid())
+  salonId      String            @map("salon_id")
+  salon        Salon             @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  customerId   String
+  customer     Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId    String
+  service      Service           @relation(fields: [serviceId], references: [id])
+  staffId      String
+  staff        Staff             @relation(fields: [staffId], references: [id])
+  startUtc     DateTime
+  endUtc       DateTime
+  status       AppointmentStatus @default(CONFIRMED)
+  source       AppointmentSource @default(AI)
+  reminderSent Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([salonId, startUtc, endUtc])
+  @@index([staffId, startUtc, endUtc])
+}
+
+model WaitlistEntry {
+  id          String         @id @default(cuid())
+  salonId     String         @map("salon_id")
+  salon       Salon          @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId   String
+  service     Service        @relation(fields: [serviceId], references: [id])
+  preferences Json
+  status      WaitlistStatus @default(OPEN)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([salonId, status])
+}
+
+model Conversation {
+  id              String              @id @default(cuid())
+  salonId         String              @map("salon_id")
+  salon           Salon               @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  channel         ConversationChannel @default(WHATSAPP)
+  mode            ConversationMode    @default(AI)
+  lastActivity    DateTime            @default(now())
+  windowExpiresAt DateTime?
+  messages        Message[]
+
+  @@index([salonId, lastActivity])
+}
+
+model Message {
+  id             String           @id @default(cuid())
+  salonId        String           @map("salon_id")
+  conversationId String
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction      MessageDirection
+  bodyEncrypted  String
+  rawPayloadRef  String?
+  metaMessageId  String?          @unique
+  timestamp      DateTime         @default(now())
+
+  @@index([salonId, conversationId, timestamp])
+}
+
+model MessageTemplate {
+  id             String           @id @default(cuid())
+  salonId        String           @map("salon_id")
+  salon          Salon            @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  name           String
+  metaTemplateId String?
+  approvalStatus TemplateStatus   @default(PENDING)
+  category       TemplateCategory @default(UTILITY)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([salonId, name])
+}
+
+model AuditLog {
+  id         String         @id @default(cuid())
+  salonId    String         @map("salon_id")
+  salon      Salon          @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  actorType  AuditActorType
+  actorId    String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime       @default(now())
+
+  @@index([salonId, createdAt])
+}
+
+model RawWebhookPayload {
+  id              String   @id @default(cuid())
+  salonId         String?  @map("salon_id")
+  salon           Salon?   @relation(fields: [salonId], references: [id], onDelete: SetNull)
+  provider        String   @default("META_WHATSAPP")
+  externalEventId String?  @unique
+  payload         Json
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+}

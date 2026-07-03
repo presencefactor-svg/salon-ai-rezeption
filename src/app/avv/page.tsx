@@ -1,0 +1,1 @@
+export default function AVV() { return <main className="mx-auto max-w-3xl p-8"><div className="card p-8"><h1 className="text-3xl font-black">AVV / DPA v0.1 (Platzhalter)</h1><p className="mt-4">Salons sind Verantwortliche, Factory Direct LTD ist Auftragsverarbeiter. Dieses versionierte Dokument wird im Onboarding verlinkt und vor Launch anwaltlich finalisiert.</p></div></main>; }
