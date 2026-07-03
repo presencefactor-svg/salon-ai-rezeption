@@ -131,10 +131,10 @@ export default function DashboardPage() {
             <div className="card p-5"><h2 className="text-2xl font-black">Manuelle Antwort</h2><p className="text-sm text-neutral-600">Speichert echte Message in DB und setzt Gespräch auf HUMAN.</p><textarea className="input mt-3 w-full" value={manualReply} onChange={(e) => setManualReply(e.target.value)} /><button className="btn mt-3" disabled={!firstConversation || !!saving} onClick={() => act('reply', () => post('sendManualReply', { conversationId: firstConversation.id, message: manualReply }))}>Antwort speichern</button></div>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-4 2xl:grid-cols-2">
             <div id="Leistungen" className="card p-5">
               <h2 className="text-2xl font-black">Leistungen & Preise</h2>
-              <div className="mt-3 grid grid-cols-[1fr_90px_90px_auto] gap-2">
+              <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_90px_90px_auto]">
                 <input className="input" value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="Name" />
                 <input className="input" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="Min" />
                 <input className="input" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="EUR" />
@@ -145,13 +145,13 @@ export default function DashboardPage() {
                   const edit = serviceEdits[s.id] || { name: s.name, durationMinutes: String(s.durationMinutes), priceEur: String(s.priceEurCents / 100), bufferMinutes: String(s.bufferMinutes), active: Boolean(s.active) };
                   return (
                     <div className="rounded-2xl border p-3" key={s.id}>
-                      <div className="grid gap-2 md:grid-cols-[1fr_90px_90px_90px_auto_auto]">
-                        <input className="input" value={edit.name} onChange={(e) => changeService(s.id, { name: e.target.value })} />
-                        <input className="input" value={edit.durationMinutes} onChange={(e) => changeService(s.id, { durationMinutes: e.target.value })} />
-                        <input className="input" value={edit.priceEur} onChange={(e) => changeService(s.id, { priceEur: e.target.value })} />
-                        <input className="input" value={edit.bufferMinutes} onChange={(e) => changeService(s.id, { bufferMinutes: e.target.value })} />
-                        <button className="btn" disabled={!!saving} onClick={() => act(`save-service-${s.id}`, () => post('updateService', { id: s.id, ...edit }))}>{saving === `save-service-${s.id}` ? 'Speichere…' : 'Speichern'}</button>
-                        <button className="rounded-xl border px-3 py-2 font-bold" disabled={!!saving} onClick={() => act(`delete-service-${s.id}`, () => post('deleteService', { id: s.id }))}>Deaktivieren</button>
+                      <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_72px_72px_72px] 2xl:grid-cols-[minmax(0,1fr)_72px_72px_72px_auto_auto]">
+                        <input className="input min-w-0" value={edit.name} onChange={(e) => changeService(s.id, { name: e.target.value })} />
+                        <input className="input min-w-0" value={edit.durationMinutes} onChange={(e) => changeService(s.id, { durationMinutes: e.target.value })} />
+                        <input className="input min-w-0" value={edit.priceEur} onChange={(e) => changeService(s.id, { priceEur: e.target.value })} />
+                        <input className="input min-w-0" value={edit.bufferMinutes} onChange={(e) => changeService(s.id, { bufferMinutes: e.target.value })} />
+                        <button className="btn whitespace-nowrap px-3 2xl:col-auto" disabled={!!saving} onClick={() => act(`save-service-${s.id}`, () => post('updateService', { id: s.id, ...edit }))}>{saving === `save-service-${s.id}` ? 'Speichere…' : 'Speichern'}</button>
+                        <button className="rounded-xl border px-3 py-2 font-bold whitespace-nowrap" disabled={!!saving} onClick={() => act(`delete-service-${s.id}`, () => post('deleteService', { id: s.id }))}>Deaktivieren</button>
                       </div>
                       <p className="mt-2 text-xs text-neutral-500">Name · Minuten · Preis € · Puffer Min · Status: {s.active ? 'aktiv' : 'inaktiv'}</p>
                     </div>
@@ -167,10 +167,10 @@ export default function DashboardPage() {
                   const edit = staffEdits[m.id] || { displayName: m.displayName, active: Boolean(m.active) };
                   return (
                     <div className="rounded-2xl border p-3" key={m.id}>
-                      <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
-                        <input className="input" value={edit.displayName} onChange={(e) => changeStaff(m.id, { displayName: e.target.value })} />
-                        <button className="btn" disabled={!!saving} onClick={() => act(`save-staff-${m.id}`, () => post('updateStaff', { id: m.id, ...edit }))}>{saving === `save-staff-${m.id}` ? 'Speichere…' : 'Speichern'}</button>
-                        <button className="rounded-xl border px-3 py-2 font-bold" disabled={!!saving} onClick={() => act(`delete-staff-${m.id}`, () => post('deleteStaff', { id: m.id }))}>Deaktivieren</button>
+                      <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_auto_auto]">
+                        <input className="input min-w-0" value={edit.displayName} onChange={(e) => changeStaff(m.id, { displayName: e.target.value })} />
+                        <button className="btn whitespace-nowrap px-3" disabled={!!saving} onClick={() => act(`save-staff-${m.id}`, () => post('updateStaff', { id: m.id, ...edit }))}>{saving === `save-staff-${m.id}` ? 'Speichere…' : 'Speichern'}</button>
+                        <button className="rounded-xl border px-3 py-2 font-bold whitespace-nowrap" disabled={!!saving} onClick={() => act(`delete-staff-${m.id}`, () => post('deleteStaff', { id: m.id }))}>Deaktivieren</button>
                       </div>
                       <p className="mt-2 text-xs text-neutral-500">Status: {m.active ? 'aktiv' : 'inaktiv'}</p>
                     </div>
