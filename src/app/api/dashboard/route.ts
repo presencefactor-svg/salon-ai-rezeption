@@ -166,6 +166,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (body.action === 'deleteAppointment') {
+      const existing = await prisma.appointment.findFirst({ where: { id: String(body.id), salonId } });
+      if (!existing) throw new Error('Termin nicht gefunden.');
+      await prisma.appointment.delete({ where: { id: existing.id } });
+      return NextResponse.json({ ok: true });
+    }
+
     if (body.action === 'sendManualReply') {
       const conversationId = String(body.conversationId);
       await prisma.conversation.update({ where: { id: conversationId }, data: { mode: 'HUMAN', lastActivity: new Date() } });

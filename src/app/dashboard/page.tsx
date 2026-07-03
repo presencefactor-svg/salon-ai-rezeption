@@ -154,11 +154,12 @@ export default function DashboardPage() {
             <p className="mt-2 text-xs text-neutral-500">Wähle Datum und Uhrzeit. Termine außerhalb der Öffnungszeiten werden abgelehnt.</p>
             <div className="mt-4 grid gap-3">
               {data!.appointments.length ? data!.appointments.map((a) => (
-                <div className="grid gap-2 rounded-2xl border bg-white p-4 lg:grid-cols-[220px_minmax(0,1fr)_120px_120px]" key={a.id}>
+                <div className="grid gap-2 rounded-2xl border bg-white p-4 xl:grid-cols-[220px_minmax(0,1fr)_110px_110px_100px]" key={a.id}>
                   <input className="input min-w-0" type="datetime-local" defaultValue={toLocalInput(a.startUtc)} id={`appt-${a.id}`} />
                   <p className="self-center min-w-0">{a.service?.name} · {a.staff?.displayName}<br /><span className="text-sm text-emerald-700">{a.status}</span></p>
                   <button className="btn px-3" onClick={() => act(`appt-${a.id}`, () => post('updateAppointment', { id: a.id, startLocal: (document.getElementById(`appt-${a.id}`) as HTMLInputElement).value }))}>Speichern</button>
                   <button className="rounded-xl border px-3 py-2 font-bold" onClick={() => act(`cancel-${a.id}`, () => post('cancelAppointment', { id: a.id }))}>Stornieren</button>
+                  <button className="rounded-xl border border-red-300 px-3 py-2 font-bold text-red-700" onClick={() => act(`delete-${a.id}`, () => post('deleteAppointment', { id: a.id }))}>Löschen</button>
                 </div>
               )) : <p className="text-neutral-600">Noch keine Termine. Button oben legt einen echten DB-Termin zum gewählten Datum an.</p>}
             </div>
