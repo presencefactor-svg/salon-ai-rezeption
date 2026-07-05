@@ -44,6 +44,9 @@ export async function POST() {
       "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "Salon_pkey" PRIMARY KEY ("id")
     )`);
+    await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "User" ("id" TEXT NOT NULL,"salon_id" TEXT NOT NULL,"email" TEXT NOT NULL,"passwordHash" TEXT,"role" "Role" NOT NULL DEFAULT 'STAFF',"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "User_pkey" PRIMARY KEY ("id"))`);
+    await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "User_salon_id_idx" ON "User"("salon_id")`);
     await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "Staff" ("id" TEXT NOT NULL,"salon_id" TEXT NOT NULL,"displayName" TEXT NOT NULL,"workingHours" JSONB NOT NULL,"active" BOOLEAN NOT NULL DEFAULT true,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "Staff_pkey" PRIMARY KEY ("id"))`);
     await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "Service" ("id" TEXT NOT NULL,"salon_id" TEXT NOT NULL,"name" TEXT NOT NULL,"durationMinutes" INTEGER NOT NULL,"priceEurCents" INTEGER NOT NULL,"bufferMinutes" INTEGER NOT NULL DEFAULT 0,"active" BOOLEAN NOT NULL DEFAULT true,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "Service_pkey" PRIMARY KEY ("id"))`);
     await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "_StaffServices" ("A" TEXT NOT NULL,"B" TEXT NOT NULL)`);
@@ -60,7 +63,6 @@ export async function POST() {
     await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "AuditLog" ("id" TEXT NOT NULL,"salon_id" TEXT NOT NULL,"actorType" "AuditActorType" NOT NULL,"actorId" TEXT,"action" TEXT NOT NULL,"entityType" TEXT,"entityId" TEXT,"metadata" JSONB,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id"))`);
     await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "RawWebhookPayload" ("id" TEXT NOT NULL,"salon_id" TEXT,"provider" TEXT NOT NULL DEFAULT 'META_WHATSAPP',"externalEventId" TEXT,"payload" JSONB NOT NULL,"processedAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "RawWebhookPayload_pkey" PRIMARY KEY ("id"))`);
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "MessageTemplate_salon_id_name_key" ON "MessageTemplate"("salon_id", "name")`);
-    await prisma.$executeRawUnsafe(`ALTER TYPE "AppointmentSource" ADD VALUE IF NOT EXISTS 'DEMO'`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "isDemo" BOOLEAN NOT NULL DEFAULT false`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "demoSignupUrl" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "demoFollowupDelaySec" INTEGER NOT NULL DEFAULT 30`);
@@ -72,7 +74,7 @@ export async function POST() {
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "DemoAnalyticsEvent_salon_id_createdAt_idx" ON "DemoAnalyticsEvent"("salon_id", "createdAt")`);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Appointment_salon_id_startUtc_endUtc_idx" ON "Appointment"("salon_id", "startUtc", "endUtc")`);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Conversation_salon_id_lastActivity_idx" ON "Conversation"("salon_id", "lastActivity")`);
-    return NextResponse.json({ ok: true, message: 'All dashboard tables ensured. Now open /api/admin/seed.' });
+    return NextResponse.json({ ok: true, message: 'All SaaS dashboard tables ensured. Registration/login is ready.' });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
