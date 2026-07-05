@@ -63,8 +63,13 @@ export async function POST(request: Request) {
           address: String(body.address || ''),
           tonePreference: body.tonePreference === 'DU' ? 'DU' : 'SIE',
           channelMode: body.channelMode === 'FULL' ? 'FULL' : 'INBOUND_ONLY',
-          aiEnabled: Boolean(body.aiEnabled),
+          aiEnabled: body.aiEnabled !== false,
           greetingText: String(body.greetingText || ''),
+          phoneNumberId: String(body.phoneNumberId || ''),
+          whatsappPhone: String(body.whatsappPhone || ''),
+          wabaId: String(body.wabaId || ''),
+          demoSignupUrl: String(body.escalationText || ''),
+          demoFollowupDelaySec: Math.max(0, Number(body.replyDelaySec || 0)),
         },
       });
       return NextResponse.json({ ok: true, salon });

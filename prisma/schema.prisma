@@ -90,6 +90,7 @@ model Salon {
   timezone             String             @default("Europe/Berlin")
   locale               String             @default("de-DE")
   tonePreference       TonePreference     @default(SIE)
+  whatsappPhone        String?
   phoneNumberId        String?
   wabaId               String?
   encryptedAccessToken String?

@@ -123,7 +123,7 @@ export default function DashboardPage() {
         <aside className="card p-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)]">
           <div className="rounded-2xl bg-neutral-950 p-4 text-white"><p className="text-xs uppercase tracking-widest text-amber-300">Live Neon Dashboard</p><h1 className="mt-1 text-2xl font-black">{salon.name}</h1><p className="text-sm text-neutral-300">{salon.timezone} · {salon.tonePreference === 'DU' ? 'du' : 'Sie'}</p></div>
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950"><b>Datenbank verbunden</b><br />Änderungen werden in Neon gespeichert.</div>
-          <nav className="mt-4 grid gap-2 text-sm font-bold">{['Konfiguration','Kalender','Öffnungszeiten','Posteingang','Leistungen','Team','KI-Test','Statistiken'].map((item) => <a className="rounded-xl px-3 py-2 hover:bg-white" href={`#${item}`} key={item}>{item}</a>)}</nav>
+          <nav className="mt-4 grid gap-2 text-sm font-bold">{['Konfiguration','WhatsApp','AI-Nachrichten','Kalender','Öffnungszeiten','Posteingang','Leistungen','Team','KI-Test','Statistiken'].map((item) => <a className="rounded-xl px-3 py-2 hover:bg-white" href={`#${item}`} key={item}>{item}</a>)}</nav>
         </aside>
 
         <section className="grid gap-4">
@@ -138,8 +138,31 @@ export default function DashboardPage() {
               <select id="tone" className="input" defaultValue={salon.tonePreference}><option value="SIE">Sie</option><option value="DU">du</option></select>
               <select id="mode" className="input" defaultValue={salon.channelMode}><option value="INBOUND_ONLY">INBOUND_ONLY</option><option value="FULL">FULL</option></select>
             </div>
-            <textarea id="greeting" className="input mt-3 w-full" defaultValue={salon.greetingText || ''} placeholder="Begrüßungstext" />
-            <button className="btn mt-3" disabled={!!saving} onClick={() => act('settings', () => post('updateSalon', { name: (document.getElementById('salonName') as HTMLInputElement).value, address: (document.getElementById('address') as HTMLInputElement).value, tonePreference: (document.getElementById('tone') as HTMLSelectElement).value, channelMode: (document.getElementById('mode') as HTMLSelectElement).value, greetingText: (document.getElementById('greeting') as HTMLTextAreaElement).value, aiEnabled: true }))}>{saving === 'settings' ? 'Speichere…' : 'Speichern'}</button>
+          </div>
+
+          <div id="WhatsApp" className="card p-5">
+            <h2 className="text-2xl font-black">WhatsApp verbinden</h2>
+            <p className="mt-2 text-sm text-neutral-600">Trage hier den WhatsApp/Meta Anschluss des Salons ein. Die Kundennummer ist die öffentliche Nummer, die Kunden anschreiben.</p>
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              <input id="phoneNumberId" className="input" defaultValue={salon.phoneNumberId || ''} placeholder="Meta phone_number_id" />
+              <input id="wabaId" className="input" defaultValue={salon.wabaId || ''} placeholder="WABA ID" />
+              <input id="publicWhatsapp" className="input" defaultValue={salon.whatsappPhone || ''} placeholder="Öffentliche WhatsApp Nummer, z.B. +49..." />
+            </div>
+            <p className="mt-2 text-xs text-neutral-500">Hinweis: Token/Embedded Signup kommt als nächster Schritt; aus Sicherheitsgründen wird der Access Token nicht im Browser angezeigt.</p>
+          </div>
+
+          <div id="AI-Nachrichten" className="card p-5">
+            <h2 className="text-2xl font-black">AI-Nachrichten konfigurieren</h2>
+            <p className="mt-2 text-sm text-neutral-600">Diese Texte steuern, wie die KI begrüßt, übergibt und mit Terminbuchungen arbeitet.</p>
+            <label className="mt-4 block text-sm font-bold">Begrüßung / System-Ton</label>
+            <textarea id="greeting" className="input mt-2 w-full" rows={4} defaultValue={salon.greetingText || ''} placeholder="Hallo! Ich bin die digitale Assistentin von ..." />
+            <label className="mt-4 block text-sm font-bold">Übergabe an Mensch / Eskalation</label>
+            <textarea id="escalationText" className="input mt-2 w-full" rows={3} defaultValue={salon.demoSignupUrl || ''} placeholder="Ich gebe das gerne an das Team weiter. Wir melden uns gleich." />
+            <div className="mt-4 grid gap-3 md:grid-cols-[160px_1fr]">
+              <input id="replyDelaySec" className="input" type="number" min="0" defaultValue={salon.demoFollowupDelaySec || 0} placeholder="Delay Sek." />
+              <label className="flex items-center gap-2 font-bold"><input id="aiEnabled" type="checkbox" defaultChecked={salon.aiEnabled !== false} /> KI aktiv</label>
+            </div>
+            <button className="btn mt-4" disabled={!!saving} onClick={() => act('settings', () => post('updateSalon', { name: (document.getElementById('salonName') as HTMLInputElement).value, address: (document.getElementById('address') as HTMLInputElement).value, tonePreference: (document.getElementById('tone') as HTMLSelectElement).value, channelMode: (document.getElementById('mode') as HTMLSelectElement).value, greetingText: (document.getElementById('greeting') as HTMLTextAreaElement).value, escalationText: (document.getElementById('escalationText') as HTMLTextAreaElement).value, replyDelaySec: (document.getElementById('replyDelaySec') as HTMLInputElement).value, aiEnabled: (document.getElementById('aiEnabled') as HTMLInputElement).checked, phoneNumberId: (document.getElementById('phoneNumberId') as HTMLInputElement).value, whatsappPhone: (document.getElementById('publicWhatsapp') as HTMLInputElement).value, wabaId: (document.getElementById('wabaId') as HTMLInputElement).value }))}>{saving === 'settings' ? 'Speichere…' : 'Konfiguration speichern'}</button>
           </div>
 
           <div id="Kalender" className="card p-5">
