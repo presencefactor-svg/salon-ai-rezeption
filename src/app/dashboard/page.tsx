@@ -154,7 +154,7 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-black">Benachrichtigungen</h2>
             <p className="mt-2 text-sm text-neutral-600">Wie soll der Salon über neue Online-Buchungen informiert werden?</p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <select id="notificationChannel" className="input" defaultValue={salon.notificationChannel || 'EMAIL'}><option value="EMAIL">Email</option><option value="WHATSAPP">WhatsApp manuell / später API</option><option value="SMS">SMS</option><option value="VIBER">Viber</option><option value="BOTH">Email + WhatsApp</option></select>
+              <select id="notificationChannel" className="input" defaultValue={salon.notificationChannel || 'EMAIL'}><option value="EMAIL">Email</option><option value="SMS">SMS via Twilio</option><option value="WHATSAPP">WhatsApp via Twilio</option><option value="EMAIL_SMS">Email + SMS</option><option value="EMAIL_WHATSAPP">Email + WhatsApp</option></select>
               <select id="notificationFrequency" className="input" defaultValue={salon.notificationFrequency || 'IMMEDIATE'}><option value="IMMEDIATE">Sofort bei jeder Buchung</option><option value="DAILY">Einmal täglich als Zusammenfassung</option><option value="TWICE_DAILY">Zweimal täglich als Zusammenfassung</option></select>
               <input id="notificationEmail" className="input" defaultValue={salon.notificationEmail || ''} placeholder="Benachrichtigungs-Email" />
               <input id="notificationPhone" className="input" defaultValue={salon.notificationPhone || salon.whatsappPhone || ''} placeholder="Benachrichtigungs-Telefon" />

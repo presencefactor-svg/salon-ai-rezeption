@@ -43,6 +43,11 @@ See `.env.example`:
 - `META_WEBHOOK_VERIFY_TOKEN`, `META_APP_ID`, `META_APP_SECRET`
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+- `BREVO_API_KEY` or `RESEND_API_KEY` for welcome/booking email notifications
+- `MAIL_FROM` email sender address
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` for Twilio SMS/WhatsApp notifications
+- `TWILIO_SMS_FROM` Twilio SMS sender number, e.g. `+15551234567`
+- `TWILIO_WHATSAPP_FROM` Twilio WhatsApp sender, e.g. `whatsapp:+14155238886` for sandbox or approved sender
 - `DEMO_WHATSAPP_NUMBER=447451285419`
 - `DEMO_META_PHONE_NUMBER_ID` for routing real Meta demo webhooks to Salon Aurora
 - `DEMO_META_ACCESS_TOKEN` for sending demo replies via Meta Cloud API
