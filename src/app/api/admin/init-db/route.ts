@@ -31,6 +31,10 @@ export async function POST() {
       "locale" TEXT NOT NULL DEFAULT 'de-DE',
       "tonePreference" "TonePreference" NOT NULL DEFAULT 'SIE',
       "whatsappPhone" TEXT,
+      "notificationChannel" TEXT NOT NULL DEFAULT 'EMAIL',
+      "notificationFrequency" TEXT NOT NULL DEFAULT 'IMMEDIATE',
+      "notificationEmail" TEXT,
+      "notificationPhone" TEXT,
       "phoneNumberId" TEXT,
       "wabaId" TEXT,
       "encryptedAccessToken" TEXT,
@@ -65,6 +69,10 @@ export async function POST() {
     await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "RawWebhookPayload" ("id" TEXT NOT NULL,"salon_id" TEXT,"provider" TEXT NOT NULL DEFAULT 'META_WHATSAPP',"externalEventId" TEXT,"payload" JSONB NOT NULL,"processedAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "RawWebhookPayload_pkey" PRIMARY KEY ("id"))`);
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "MessageTemplate_salon_id_name_key" ON "MessageTemplate"("salon_id", "name")`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "whatsappPhone" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "notificationChannel" TEXT NOT NULL DEFAULT 'EMAIL'`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "notificationFrequency" TEXT NOT NULL DEFAULT 'IMMEDIATE'`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "notificationEmail" TEXT`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "notificationPhone" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "isDemo" BOOLEAN NOT NULL DEFAULT false`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "demoSignupUrl" TEXT`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "Salon" ADD COLUMN IF NOT EXISTS "demoFollowupDelaySec" INTEGER NOT NULL DEFAULT 30`);

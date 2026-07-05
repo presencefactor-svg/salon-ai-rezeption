@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     if (exists) throw new Error('Diese E-Mail ist bereits registriert.');
 
     const result = await prisma.$transaction(async (tx) => {
-      const salon = await tx.salon.create({ data: { name: salonName, address: String(body.address || ''), whatsappPhone, timezone: 'Europe/Berlin', locale: 'de-DE', subscriptionStatus: 'TRIALING', greetingText: `Hallo! Ich bin die digitale Assistentin von ${salonName}.` } });
+      const salon = await tx.salon.create({ data: { name: salonName, address: String(body.address || ''), whatsappPhone, notificationEmail: email, notificationPhone: whatsappPhone, notificationChannel: 'EMAIL', notificationFrequency: 'IMMEDIATE', timezone: 'Europe/Berlin', locale: 'de-DE', subscriptionStatus: 'TRIALING', greetingText: `Hallo! Ich bin die digitale Assistentin von ${salonName}.` } });
       const user = await tx.user.create({ data: { salonId: salon.id, email, passwordHash: hashPassword(password), role: 'OWNER' } });
       const staff = await tx.staff.create({ data: { salonId: salon.id, displayName: ownerName, workingHours: [{ weekday: 1, ranges: [{ start: '09:00', end: '17:00' }] }] } });
       await tx.openingHours.createMany({ data: [1,2,3,4,5].map((weekday) => ({ salonId: salon.id, weekday, openTime: '09:00', closeTime: '18:00' })), skipDuplicates: true });

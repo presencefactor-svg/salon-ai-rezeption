@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { encryptPlaintext } from '@/lib/gdpr/crypto';
 import { getSessionFromRequest } from '@/lib/auth';
+import { notifyOwnerBooking } from '@/lib/notifications';
 
 async function getSalonId(request: Request) {
   const session = getSessionFromRequest(request);
@@ -66,6 +67,10 @@ export async function POST(request: Request) {
           aiEnabled: body.aiEnabled !== false,
           greetingText: String(body.greetingText || ''),
           whatsappPhone: String(body.whatsappPhone || ''),
+          notificationChannel: String(body.notificationChannel || 'EMAIL'),
+          notificationFrequency: String(body.notificationFrequency || 'IMMEDIATE'),
+          notificationEmail: String(body.notificationEmail || ''),
+          notificationPhone: String(body.notificationPhone || ''),
           demoSignupUrl: String(body.escalationText || ''),
           demoFollowupDelaySec: Math.max(0, Number(body.replyDelaySec || 0)),
         },
@@ -168,6 +173,7 @@ export async function POST(request: Request) {
       await assertInsideOpeningHours(salonId, startUtc, endUtc);
       const customer = await prisma.customer.create({ data: { salonId, nameEncrypted: encryptPlaintext(String(body.customerName || 'Kundin')), whatsappEncrypted: encryptPlaintext(String(body.phone || '+491****0000')) } });
       const appointment = await prisma.appointment.create({ data: { salonId, customerId: customer.id, serviceId: service.id, staffId: staff.id, startUtc, endUtc, source: 'MANUAL' }, include: { service: true, staff: true } });
+      await notifyOwnerBooking({ salonId, appointmentId: appointment.id }).catch(() => null);
       return NextResponse.json({ ok: true, appointment });
     }
 

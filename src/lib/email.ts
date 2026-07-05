@@ -24,6 +24,21 @@ export async function sendWelcomeEmail(input: { to: string; salonName: string })
   return { provider: 'none', ok: false, status: 0, body: 'No BREVO_API_KEY or RESEND_API_KEY configured' };
 }
 
+export async function sendBookingEmail(input: { to: string; subject: string; text: string }) {
+  if (!input.to) return { provider: 'none', ok: false, status: 0, body: 'Missing notification email' };
+  const from = process.env.MAIL_FROM || 'Salon AI Rezeption <noreply@salon-ai-rezeption.vercel.app>';
+  const html = `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap">${input.text}</pre>`;
+  if (process.env.BREVO_API_KEY) {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'api-key': process.env.BREVO_API_KEY }, body: JSON.stringify({ sender: parseSender(from), to: [{ email: input.to }], subject: input.subject, htmlContent: html }) });
+    return { provider: 'brevo', ok: res.ok, status: res.status, body: await res.text().catch(() => '') };
+  }
+  if (process.env.RESEND_API_KEY) {
+    const res = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.RESEND_API_KEY}` }, body: JSON.stringify({ from, to: input.to, subject: input.subject, text: input.text }) });
+    return { provider: 'resend', ok: res.ok, status: res.status, body: await res.text().catch(() => '') };
+  }
+  return { provider: 'none', ok: false, status: 0, body: 'No BREVO_API_KEY or RESEND_API_KEY configured' };
+}
+
 function parseSender(from: string) {
   const match = from.match(/^(.*)<(.+)>$/);
   if (!match) return { email: from };

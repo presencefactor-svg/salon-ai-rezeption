@@ -91,6 +91,10 @@ model Salon {
   locale               String             @default("de-DE")
   tonePreference       TonePreference     @default(SIE)
   whatsappPhone        String?
+  notificationChannel  String             @default("EMAIL")
+  notificationFrequency String            @default("IMMEDIATE")
+  notificationEmail    String?
+  notificationPhone    String?
   phoneNumberId        String?
   wabaId               String?
   encryptedAccessToken String?
