@@ -141,14 +141,13 @@ export default function DashboardPage() {
           </div>
 
           <div id="WhatsApp" className="card p-5">
-            <h2 className="text-2xl font-black">WhatsApp verbinden</h2>
-            <p className="mt-2 text-sm text-neutral-600">Trage hier den WhatsApp/Meta Anschluss des Salons ein. Die Kundennummer ist die öffentliche Nummer, die Kunden anschreiben.</p>
-            <div className="mt-4 grid gap-3 lg:grid-cols-3">
-              <input id="phoneNumberId" className="input" defaultValue={salon.phoneNumberId || ''} placeholder="Meta phone_number_id" />
-              <input id="wabaId" className="input" defaultValue={salon.wabaId || ''} placeholder="WABA ID" />
+            <h2 className="text-2xl font-black">WhatsApp Nummer</h2>
+            <p className="mt-2 text-sm text-neutral-600">Für den Salon reicht hier die öffentliche WhatsApp-/Telefonnummer. Die technische Meta-Verknüpfung übernimmt der Plattform-Admin.</p>
+            <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
               <input id="publicWhatsapp" className="input" defaultValue={salon.whatsappPhone || ''} placeholder="Öffentliche WhatsApp Nummer, z.B. +49..." />
+              <button className="btn" disabled={!!saving} onClick={() => act('whatsapp', () => post('updateSalon', { name: (document.getElementById('salonName') as HTMLInputElement).value, address: (document.getElementById('address') as HTMLInputElement).value, tonePreference: (document.getElementById('tone') as HTMLSelectElement).value, channelMode: (document.getElementById('mode') as HTMLSelectElement).value, greetingText: (document.getElementById('greeting') as HTMLTextAreaElement)?.value || salon.greetingText || '', escalationText: (document.getElementById('escalationText') as HTMLTextAreaElement)?.value || salon.demoSignupUrl || '', replyDelaySec: (document.getElementById('replyDelaySec') as HTMLInputElement)?.value || salon.demoFollowupDelaySec || 0, aiEnabled: (document.getElementById('aiEnabled') as HTMLInputElement)?.checked ?? salon.aiEnabled !== false, whatsappPhone: (document.getElementById('publicWhatsapp') as HTMLInputElement).value }))}>Nummer speichern</button>
             </div>
-            <p className="mt-2 text-xs text-neutral-500">Hinweis: Token/Embedded Signup kommt als nächster Schritt; aus Sicherheitsgründen wird der Access Token nicht im Browser angezeigt.</p>
+            <p className="mt-2 text-xs text-neutral-500">Der Admin sieht diese Nummer im Admin-Dashboard und trägt dort Meta phone_number_id / WABA ID ein.</p>
           </div>
 
           <div id="AI-Nachrichten" className="card p-5">
@@ -162,7 +161,7 @@ export default function DashboardPage() {
               <input id="replyDelaySec" className="input" type="number" min="0" defaultValue={salon.demoFollowupDelaySec || 0} placeholder="Delay Sek." />
               <label className="flex items-center gap-2 font-bold"><input id="aiEnabled" type="checkbox" defaultChecked={salon.aiEnabled !== false} /> KI aktiv</label>
             </div>
-            <button className="btn mt-4" disabled={!!saving} onClick={() => act('settings', () => post('updateSalon', { name: (document.getElementById('salonName') as HTMLInputElement).value, address: (document.getElementById('address') as HTMLInputElement).value, tonePreference: (document.getElementById('tone') as HTMLSelectElement).value, channelMode: (document.getElementById('mode') as HTMLSelectElement).value, greetingText: (document.getElementById('greeting') as HTMLTextAreaElement).value, escalationText: (document.getElementById('escalationText') as HTMLTextAreaElement).value, replyDelaySec: (document.getElementById('replyDelaySec') as HTMLInputElement).value, aiEnabled: (document.getElementById('aiEnabled') as HTMLInputElement).checked, phoneNumberId: (document.getElementById('phoneNumberId') as HTMLInputElement).value, whatsappPhone: (document.getElementById('publicWhatsapp') as HTMLInputElement).value, wabaId: (document.getElementById('wabaId') as HTMLInputElement).value }))}>{saving === 'settings' ? 'Speichere…' : 'Konfiguration speichern'}</button>
+            <button className="btn mt-4" disabled={!!saving} onClick={() => act('settings', () => post('updateSalon', { name: (document.getElementById('salonName') as HTMLInputElement).value, address: (document.getElementById('address') as HTMLInputElement).value, tonePreference: (document.getElementById('tone') as HTMLSelectElement).value, channelMode: (document.getElementById('mode') as HTMLSelectElement).value, greetingText: (document.getElementById('greeting') as HTMLTextAreaElement).value, escalationText: (document.getElementById('escalationText') as HTMLTextAreaElement).value, replyDelaySec: (document.getElementById('replyDelaySec') as HTMLInputElement).value, aiEnabled: (document.getElementById('aiEnabled') as HTMLInputElement).checked, whatsappPhone: (document.getElementById('publicWhatsapp') as HTMLInputElement).value }))}>{saving === 'settings' ? 'Speichere…' : 'Konfiguration speichern'}</button>
           </div>
 
           <div id="Kalender" className="card p-5">

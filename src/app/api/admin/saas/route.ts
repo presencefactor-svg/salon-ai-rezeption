@@ -23,5 +23,9 @@ export async function POST(request: Request) {
     const salon = await prisma.salon.update({ where: { id: String(body.salonId) }, data: { aiEnabled: Boolean(body.aiEnabled) } });
     return NextResponse.json({ ok: true, salon });
   }
+  if (body.action === 'updateWhatsApp') {
+    const salon = await prisma.salon.update({ where: { id: String(body.salonId) }, data: { whatsappPhone: String(body.whatsappPhone || ''), phoneNumberId: String(body.phoneNumberId || ''), wabaId: String(body.wabaId || '') } });
+    return NextResponse.json({ ok: true, salon });
+  }
   return NextResponse.json({ ok: false, error: 'Unknown action' }, { status: 400 });
 }
