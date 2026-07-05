@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { encryptPlaintext } from '@/lib/gdpr/crypto';
+import { getSessionFromRequest } from '@/lib/auth';
 
-const DEMO_SALON_ID = 'demo-salon';
-
-async function getSalonId() {
-  const salon = await prisma.salon.findFirst({ orderBy: { createdAt: 'asc' } });
-  return salon?.id ?? DEMO_SALON_ID;
+async function getSalonId(request: Request) {
+  const session = getSessionFromRequest(request);
+  if (!session?.salonId) throw new Error('Nicht angemeldet. Bitte einloggen oder registrieren.');
+  return session.salonId;
 }
 
 function minutes(value: string) {
@@ -29,9 +29,9 @@ async function assertInsideOpeningHours(salonId: string, startUtc: Date, endUtc:
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const salonId = await getSalonId();
+    const salonId = await getSalonId(request);
     const salon = await prisma.salon.findUnique({ where: { id: salonId } });
     if (!salon) return NextResponse.json({ ok: false, error: 'Salon not found. Open /setup and run steps 1-2.' }, { status: 404 });
 
@@ -53,7 +53,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const salonId = await getSalonId();
+    const salonId = await getSalonId(request);
 
     if (body.action === 'updateSalon') {
       const salon = await prisma.salon.update({

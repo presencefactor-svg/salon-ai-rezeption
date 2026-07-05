@@ -25,7 +25,7 @@ export default async function Home() {
           <p className="mt-6 max-w-2xl text-xl text-neutral-700">Die KI beantwortet WhatsApp-Anfragen 24/7, bucht Termine, reduziert No-shows und übergibt schwierige Fälle an Ihr Team.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a className="btn text-center text-lg" href={waLink}>WhatsApp-Demo öffnen</a>
-            <a className="rounded-xl border border-neutral-300 bg-white px-5 py-3 text-center font-black" href="/api/demo/signup-click">14 Tage kostenlos testen</a>
+            <a className="rounded-xl border border-neutral-300 bg-white px-5 py-3 text-center font-black" href="/register">14 Tage kostenlos testen</a>
           </div>
           <p className="mt-4 text-sm text-neutral-600">Schreiben Sie unserer Assistentin — als wären Sie Kundin.</p>
         </div>
@@ -60,7 +60,7 @@ export default async function Home() {
 
       <section id="preise" className="mx-auto max-w-7xl px-5 py-10">
         <h2 className="text-3xl font-black">Preise</h2>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">{prices.map(([name, price, text]) => <div className="card p-6" key={name}><h3 className="text-2xl font-black">{name}</h3><div className="mt-3 text-4xl font-black">{price}<span className="text-base font-bold text-neutral-500"> / Monat</span></div><p className="mt-3 text-neutral-700">{text}</p><a className="btn mt-5 block text-center" href="/api/demo/signup-click">Kostenlos testen</a></div>)}</div>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">{prices.map(([name, price, text]) => <div className="card p-6" key={name}><h3 className="text-2xl font-black">{name}</h3><div className="mt-3 text-4xl font-black">{price}<span className="text-base font-bold text-neutral-500"> / Monat</span></div><p className="mt-3 text-neutral-700">{text}</p><a className="btn mt-5 block text-center" href="/register">Kostenlos testen</a></div>)}</div>
         <p className="mt-3 text-sm text-neutral-600">14 Tage kostenlos, netto zzgl. USt. / Reverse Charge nach Prüfung.</p>
       </section>
 

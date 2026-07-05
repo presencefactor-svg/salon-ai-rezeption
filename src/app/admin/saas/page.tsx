@@ -1,0 +1,21 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+export default function AdminSaasPage() {
+  const [password, setPassword] = useState('');
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  async function load() {
+    setLoading(true); setError('');
+    try { const res = await fetch('/api/admin/saas', { cache: 'no-store' }); const json = await res.json(); if (!res.ok || json.ok === false) throw new Error(json.error || 'Admin API Fehler'); setData(json); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Fehler'); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { load(); }, []);
+  async function login(e: React.FormEvent) { e.preventDefault(); const res = await fetch('/api/admin/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) }); const json = await res.json(); if (!res.ok || json.ok === false) setError(json.error || 'Login falsch'); else load(); }
+  async function action(payload: any) { const res = await fetch('/api/admin/saas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const json = await res.json(); if (!res.ok || json.ok === false) setError(json.error || 'Fehler'); else load(); }
+  if (!data) return <main className="min-h-screen bg-[#fffaf3] p-5"><section className="card mx-auto mt-10 max-w-md p-6"><h1 className="text-3xl font-black">Admin Dashboard</h1>{error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}<form onSubmit={login} className="mt-5 grid gap-3"><input className="input" type="password" placeholder="ADMIN_PASSWORD / SEED_TOKEN" value={password} onChange={(e)=>setPassword(e.target.value)}/><button className="btn">Einloggen</button></form></section></main>;
+  return <main className="min-h-screen bg-[#fffaf3] p-5 md:p-8"><section className="mx-auto max-w-7xl"><h1 className="text-4xl font-black">Admin Dashboard</h1><p className="mt-2 text-neutral-600">Registranten, Abos und globale Übersicht.</p><div className="mt-6 grid gap-4 md:grid-cols-4">{Object.entries(data.totals).map(([k,v])=><div className="card p-5" key={k}><div className="text-3xl font-black">{String(v)}</div><div className="text-sm text-neutral-600">{k}</div></div>)}</div><div className="card mt-6 overflow-x-auto p-4"><table className="w-full min-w-[900px] text-sm"><thead><tr className="text-left"><th>Salon</th><th>Owner</th><th>Abo</th><th>AI</th><th>Services</th><th>Team</th><th>Termine</th><th>Erstellt</th><th>Aktionen</th></tr></thead><tbody>{data.salons.map((s:any)=><tr className="border-t" key={s.id}><td className="py-3 font-bold">{s.name}{s.isDemo && ' (Demo)'}</td><td>{s.users?.[0]?.email || '-'}</td><td>{s.subscriptionStatus}</td><td>{s.aiEnabled ? 'aktiv' : 'aus'}</td><td>{s.services.length}</td><td>{s.staff.length}</td><td>{s.appointments.length}</td><td>{new Date(s.createdAt).toLocaleDateString('de-DE')}</td><td className="flex gap-2 py-2"><select className="input py-2" defaultValue={s.subscriptionStatus} onChange={(e)=>action({ action:'updateSubscription', salonId:s.id, subscriptionStatus:e.target.value })}>{['TRIALING','ACTIVE','PAST_DUE','CANCELED','INCOMPLETE'].map(x=><option key={x}>{x}</option>)}</select><button className="rounded-xl border px-3 font-bold" onClick={()=>action({ action:'toggleAi', salonId:s.id, aiEnabled:!s.aiEnabled })}>{s.aiEnabled?'AI aus':'AI an'}</button></td></tr>)}</tbody></table></div></section></main>;
+}
